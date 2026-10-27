@@ -1,0 +1,12 @@
+problem,test,status,time_ms,time_budget_ms,tier,correct,complete,optimal,time_alg_ms,time_cal_ms,note
+n-puzzle,t01,RTE,23,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t02,RTE,22,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t03,RTE,22,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t04,RTE,22,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t05,RTE,23,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t06,RTE,22,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t07,RTE,22,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t08,RTE,22,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t09,RTE,22,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t10,RTE,23,1000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
+n-puzzle,t11,RTE,22,5000,slow,false,false,,,0,exit 2 (runs: 0/1 OK)
