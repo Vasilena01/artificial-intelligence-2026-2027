@@ -1,311 +1,144 @@
 import math
 import os
 import time
-import sys
 
 
-# =====================================================================
-# Функция: compute_heuristic
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Изчислява евристиката "разстояние на Манхатън" за дадено състояние
-#   на дъската. За всяка плочка (без празната – 0) намира сумата от
-#   абсолютните разлики между нейния текущ ред/колона и целевия ред/колона.
-#
-# Как работи:
-#   Обхождаме всеки индекс в текущото състояние (board), пресмятаме
-#   текущата (row, col) позиция от едномерния индекс чрез деление и
-#   остатък по размера на дъската. От предварително построения речник
-#   target_coords вземаме целевата позиция на плочката и натрупваме
-#   сумата от абсолютните разлики.
-#
-# За какво служи в алгоритъма:
-#   Манхатънското разстояние е допустима и консистентна евристика –
-#   никога не надценява реалната цена, затова IDA* остава оптимален.
-#   Използва се за изчисляване на f = g + h при всяко състояние и
-#   за задаване на началния праг (threshold) в основния цикъл.
-# =====================================================================
-def compute_heuristic(board, target_coords, dim):
+def is_solvable(board_state, size):
+    arr = [x for x in board_state if x != 0]
+    inversions = 0
+    for a in range(len(arr)):
+        for b in range(a + 1, len(arr)):
+            if arr[a] > arr[b]:
+                inversions += 1
+
+    #  Odd board: inversions must be even
+    if size % 2 == 1:
+        return inversions % 2 == 0
+
+    # Even board: inversions + blank row must be odd
+    empty_row = board_state.index(0) // size
+    return (inversions + empty_row) % 2 == 1
+
+
+def manhattan_distance(board_state, target_positions, size):
     total = 0
-    for position, tile in enumerate(board):
-        if tile == 0:
+    for pos, val in enumerate(board_state):
+        if val == 0:
             continue
-        current_row, current_col = divmod(position, dim)
-        goal_row, goal_col = target_coords[tile]
-        total += abs(current_row - goal_row) + abs(current_col - goal_col)
+        row, col = pos // size, pos % size
+        target_row, target_col = target_positions[val]
+        total += abs(row - target_row) + abs(col - target_col)
     return total
 
 
-# =====================================================================
-# Функция: neighbor_moves
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Връща списък от възможните ходове на празната плочка (0) от текущата
-#   ѝ позиция. Всеки ход е двойка (име_на_хода, нов_индекс_на_нулата).
-#
-# Как работи:
-#   От индекса на нулата изчисляваме реда и колоната. На база граничните
-#   условия на дъската добавяме съответните ходове:
-#     - плочката отгоре слиза надолу  -> нулата отива нагоре ("down")
-#     - плочката отдолу се качва      -> нулата отива надолу ("up")... и т.н.
-#   Важно: имената на ходовете описват движението на ПЛОЧКАТА, която
-#   заема мястото на нулата, както е прието в условието (left/right/up/down).
-#
-# За какво служи в алгоритъма:
-#   Служи като "функция на наследниците" (successor function) – от всяко
-#   състояние разклоняваме търсенето, като пробваме всички възможни
-#   съседни конфигурации.
-# =====================================================================
-def neighbor_moves(zero_pos, dim):
-    actions = []
-    row, col = divmod(zero_pos, dim)
-    # плочка отгоре слиза надолу => посока на хода "down"
+def possible_moves(empty_pos, size):
+    options = []
+    row, col = empty_pos // size, empty_pos % size
+    if row < size - 1:
+        options.append(('up', empty_pos + size))
     if row > 0:
-        actions.append(('down', zero_pos - dim))
-    # плочка отдолу се качва => посока на хода "up"
-    if row < dim - 1:
-        actions.append(('up', zero_pos + dim))
-    # плочка отляво се мести надясно => посока на хода "right"
+        options.append(('down', empty_pos - size))
+    if col < size - 1:
+        options.append(('left', empty_pos + 1))
     if col > 0:
-        actions.append(('right', zero_pos - 1))
-    # плочка отдясно се мести наляво => посока на хода "left"
-    if col < dim - 1:
-        actions.append(('left', zero_pos + 1))
-    return actions
+        options.append(('right', empty_pos - 1))
+    return options
 
 
-# =====================================================================
-# Функция: apply_swap
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Връща ново състояние (tuple), в което две позиции на дъската са
-#   разменени – използва се за "преместване" на нулата към съседна клетка.
-#
-# Как работи:
-#   Преобразуваме tuple-а в списък (за да може да се модифицира), разменяме
-#   двете позиции и връщаме списъка обратно като tuple (хешируемо, за
-#   да можем да го съхраняваме в set за визитирани състояния).
-#
-# За какво служи в алгоритъма:
-#   Чиста операция за генериране на следващо състояние, без да променя
-#   текущото – безопасно за backtracking в DFS-а на IDA*.
-# =====================================================================
-def apply_swap(board, i, j):
-    arr = list(board)
-    arr[i], arr[j] = arr[j], arr[i]
+def swap(board_state, pos_a, pos_b):
+    arr = list(board_state)
+    arr[pos_a], arr[pos_b] = arr[pos_b], arr[pos_a]
     return tuple(arr)
 
 
-# =====================================================================
-# Функция: count_inversions
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Брои броя инверсии в последователността от плочки (пренебрегвайки 0).
-#   Инверсия = двойка (a, b), в която a стои преди b, но a > b.
-# =====================================================================
-def count_inversions(board):
-    tiles = [v for v in board if v != 0]
-    inv = 0
-    for i in range(len(tiles)):
-        for j in range(i + 1, len(tiles)):
-            if tiles[i] > tiles[j]:
-                inv += 1
-    return inv
+REVERSE = {'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left'}
 
 
-# =====================================================================
-# Функция: puzzle_is_solvable
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Проверява дали НАЧАЛНОТО състояние може да бъде доведено до ЦЕЛЕВОТО
-#   чрез валидни ходове. Работи и когато нулата в целта не е на стандартна
-#   позиция (долу-дясно).
-#
-# Как работи (общ случай – сравняване спрямо произволна цел):
-#   Валидните ходове запазват паритета на инвариант, който зависи от
-#   размера на дъската:
-#     - нечетна дъска (3x3, 5x5, ...): паритетът на БРОЯ ИНВЕРСИИ.
-#         => решимо <=> inv(start) и inv(goal) имат еднакъв паритет.
-#     - четна дъска (4x4, 6x6, ...): паритетът на (брой инверсии + ред на 0,
-#       броен от горе; 0-базиран или 1-базиран – стига и двете да са единни).
-#         => решимо <=> (inv(start) + row0(start)) и (inv(goal) + row0(goal))
-#            имат еднакъв паритет.
-#
-# За какво служи в алгоритъма:
-#   Избягваме безсмислено търсене върху нерешима конфигурация. При такъв
-#   случай директно извеждаме -1.
-# =====================================================================
-def puzzle_is_solvable(start, goal, dim):
-    inv_start = count_inversions(start)
-    inv_goal = count_inversions(goal)
+def ida_star(start_state, target_state, size, target_positions):
+    moves_taken = []
 
-    if dim % 2 == 1:
-        return (inv_start % 2) == (inv_goal % 2)
-
-    row0_start = start.index(0) // dim
-    row0_goal = goal.index(0) // dim
-    return ((inv_start + row0_start) % 2) == ((inv_goal + row0_goal) % 2)
-
-
-# =====================================================================
-# Функция: bounded_dfs
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Извършва ограничено DFS търсене за една итерация на IDA*. Връща или
-#   True (намерено решение, пътят е натрупан в `trail`), или най-малката
-#   f-стойност, която е надвишила текущия праг (threshold) – тя става
-#   новият праг за следващата итерация.
-#
-# Как работи:
-#   1. Изчислява f = g + h за текущото състояние.
-#   2. Ако f > threshold – отрязваме и връщаме f (за ъпдейт на прага).
-#   3. Ако състоянието е целевото – връщаме True.
-#   4. Иначе: за всеки възможен ход на нулата:
-#        - прескачаме ход, който е обратен на предишния (анти-дубликат);
-#        - прескачаме състояния, вече налични в `seen` (за да избегнем цикли);
-#        - рекурсивно продължаваме; при неуспех правим backtrack
-#          (махаме от пътя и от посетените).
-#
-# За какво служи в алгоритъма:
-#   Това е сърцето на IDA* – комбинира идеята за итеративно задълбочаване
-#   (DFS с ограничение) с f-функцията от A* (g + h), което гарантира
-#   оптималност при допустима евристика и памет O(d).
-# =====================================================================
-def bounded_dfs(state, g_cost, last_dir, threshold,
-                zero_pos, goal, dim, target_coords, trail, seen):
-    f_value = g_cost + compute_heuristic(state, target_coords, dim)
-    if f_value > threshold:
-        return f_value
-    if state == goal:
-        return True
-
-    opposite = {'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left'}
-    next_threshold = math.inf
-    seen.add(state)
-
-    for direction, new_zero in neighbor_moves(zero_pos, dim):
-        # не правим ход, обратен на предишния (намалява клоновия фактор)
-        if last_dir is not None and direction == opposite[last_dir]:
-            continue
-
-        candidate = apply_swap(state, zero_pos, new_zero)
-        if candidate in seen:
-            continue
-
-        trail.append(direction)
-        result = bounded_dfs(candidate, g_cost + 1, direction, threshold,
-                             new_zero, goal, dim, target_coords, trail, seen)
-        if result is True:
+    def search(board_state, cost_so_far, last_move, threshold, empty_pos, seen):
+        estimate = cost_so_far + manhattan_distance(board_state, target_positions, size)
+        if estimate > threshold:
+            return estimate
+        if board_state == target_state:
             return True
-        if result < next_threshold:
-            next_threshold = result
-        trail.pop()
-        seen.discard(candidate)
 
-    return next_threshold
+        next_threshold = math.inf
+        seen.add(board_state)
 
+        for direction, next_empty in possible_moves(empty_pos, size):
+            if last_move is not None and direction == REVERSE[last_move]:
+                continue
 
-# =====================================================================
-# Функция: ida_star_solve
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Основен цикъл на IDA*. Повтаря ограниченото DFS с нарастващ праг,
-#   докато не бъде намерено решение (или не се установи, че такова няма).
-#
-# Как работи:
-#   - Началният праг е h(start) – евристиката за началното състояние.
-#   - На всяка итерация извикваме bounded_dfs. Ако върне True – имаме път.
-#   - Ако върне inf – изчерпали сме всички възможности без решение.
-#   - Иначе новият праг = върнатата минимална f-стойност над текущия праг.
-#
-# За какво служи в алгоритъма:
-#   Това е координаторът, който имплементира идеята "итеративно задълбочаване
-#   върху f-стойности". Благодарение на монотонно нарастващия праг получаваме
-#   оптимално решение, използвайки само O(дълбочина) памет.
-# =====================================================================
-def ida_star_solve(start, goal, dim, target_coords):
-    threshold = compute_heuristic(start, target_coords, dim)
-    trail = []
+            next_state = swap(board_state, empty_pos, next_empty)
+            if next_state in seen:
+                continue
+
+            moves_taken.append(direction)
+            outcome = search(next_state, cost_so_far + 1, direction, threshold, next_empty, seen)
+            if outcome is True:
+                return True
+            if outcome < next_threshold:
+                next_threshold = outcome
+            moves_taken.pop()
+            seen.discard(next_state)
+
+        return next_threshold
+
+    threshold = manhattan_distance(start_state, target_positions, size)
     while True:
         seen = set()
-        outcome = bounded_dfs(start, 0, None, threshold,
-                              start.index(0), goal, dim, target_coords,
-                              trail, seen)
+        outcome = search(start_state, 0, None, threshold, start_state.index(0), seen)
         if outcome is True:
-            return trail
-        if outcome is math.inf or outcome == math.inf:
+            return moves_taken
+        if outcome == math.inf:
             return None
         threshold = outcome
 
 
-# =====================================================================
-# Функция: run
-# ---------------------------------------------------------------------
-# Какво прави:
-#   Входно-изходната обвивка на програмата: чете входа по формата,
-#   описан в условието, подготвя целевото състояние и координатите му,
-#   проверява решимост, пуска IDA* и извежда резултата. Поддържа
-#   и измерване на времето при FMI_TIME_ONLY=1.
-#
-# Как работи:
-#   1. Чете N (брой плочки) и I (целеви индекс на 0, или -1 за долу-дясно).
-#   2. Пресмята размера dim = sqrt(N + 1).
-#   3. Чете dim реда с числата и ги сглобява в tuple.
-#   4. Строи целевата конфигурация: 1..N, 0 в края; при I != -1 поставя
-#      нулата на желаното място (разменя с последната позиция).
-#   5. Прави речник target_coords: стойност -> (ред, колона) в целта.
-#   6. Проверява решимост (с ред на нулата, броен ОТДОЛУ, от 1).
-#   7. Ако режимът е "само време" – мери и печата # TIMES_MS: alg=<ms>.
-#      Иначе печата дължината на пътя и всеки ход на нов ред.
-#
-# За какво служи в алгоритъма:
-#   Съединява всички части в завършена програма, съвместима с
-#   fmi-ai-judge (и с автоматичните тестове само за време).
-# =====================================================================
 def run():
-    data = sys.stdin.read().split()
-    pointer = 0
+    n = int(input())
+    i = int(input())
+    size = int(math.sqrt(n + 1))
 
-    N = int(data[pointer]); pointer += 1
-    I = int(data[pointer]); pointer += 1
-    dim = int(math.isqrt(N + 1))
+    # We construct the board
+    board_state = []
+    for _ in range(size):
+        board_state.extend(map(int, input().split()))
+    board_state = tuple(board_state)
 
-    cells = []
-    for _ in range(dim * dim):
-        cells.append(int(data[pointer])); pointer += 1
-    start = tuple(cells)
-
-    # изграждане на целта: 1,2,...,N,0 и, при нужда, преместване на 0
-    goal_list = list(range(1, N + 1)) + [0]
-    if I != -1:
-        goal_list[I], goal_list[N] = goal_list[N], goal_list[I]
-    goal = tuple(goal_list)
-
-    target_coords = {}
-    for pos, val in enumerate(goal):
-        target_coords[val] = (pos // dim, pos % dim)
-
-    if not puzzle_is_solvable(start, goal, dim):
+    # If the input board is not solvable, we print -1 and return
+    if not is_solvable(board_state, size):
         print(-1)
         return
 
+    # We construct the goal board: we place the tiles 1..n in order and we insert the blank at index i
+    target_state = list(range(1, n + 1))
+    if i == -1:
+        i = n
+    target_state.insert(i, 0)
+    target_state = tuple(target_state)
+
+    target_positions = {val: (idx // size, idx % size) for idx, val in enumerate(target_state)}
+
     time_only = os.environ.get('FMI_TIME_ONLY', '0') == '1'
+    if time_only:
+        start_time = time.perf_counter()
+
+    moves_taken = ida_star(board_state, target_state, size, target_positions)
 
     if time_only:
-        begin = time.perf_counter()
-        path = ida_star_solve(start, goal, dim, target_coords)
-        end = time.perf_counter()
-        elapsed_ms = int((end - begin) * 1000)
+        elapsed_ms = int((time.perf_counter() - start_time) * 1000)
         print(f"# TIMES_MS: alg={elapsed_ms}")
         return
 
-    path = ida_star_solve(start, goal, dim, target_coords)
-    if path is None:
+    if moves_taken is None:
         print(-1)
-        return
-
-    print(len(path))
-    print('\n'.join(path))
+    else:
+        print(len(moves_taken))
+        for direction in moves_taken:
+            print(direction)
 
 
 if __name__ == "__main__":
