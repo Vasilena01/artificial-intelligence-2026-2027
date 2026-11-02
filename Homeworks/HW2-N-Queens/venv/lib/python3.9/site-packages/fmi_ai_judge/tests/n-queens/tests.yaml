@@ -1,0 +1,30 @@
+defaults:
+  timeout: 1
+  require_complete: true
+  require_optimal: false
+
+tests:
+  - id: t01           # N=1 → trivial
+  - id: t02           # N=2 → unsolvable → must print -1
+  - id: t03           # N=3 → unsolvable → must print -1
+  - id: t04           # N=4 → check 0 conflicts
+  - id: t05           # N=5 → check 0 conflicts
+  - id: t06           # N=6 → flaky; require 5/5 success
+    repeats: 5
+    min_success: 5
+  - id: t07           # N=100 → full solution, 0 conflicts
+  - id: t08           # N=1000 → time-only
+    time_only: true
+    timeout_slow: 1
+  - id: t09           # N=9999 → time-only
+    time_only: true
+    timeout_slow: 10
+  - id: t10           # N=10000 → time-only
+    time_only: true
+    timeout_slow: 10
+  - id: t11           # N=10001 → time-only
+    time_only: true
+    timeout_slow: 10
+  - id: t12           # N=10004 → time-only
+    time_only: true
+    timeout_slow: 10

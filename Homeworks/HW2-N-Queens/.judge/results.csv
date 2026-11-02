@@ -1,0 +1,13 @@
+problem,test,status,time_ms,time_budget_ms,tier,correct,complete,optimal,time_alg_ms,time_cal_ms,note
+n-queens,t01,OK,27,1000,slow,true,true,,0,0,(runs: 1/1 OK)
+n-queens,t02,OK,26,1000,slow,true,true,,,0,(runs: 1/1 OK)
+n-queens,t03,OK,25,1000,slow,true,true,,,0,(runs: 1/1 OK)
+n-queens,t04,OK,28,1000,slow,true,true,,0,0,(runs: 1/1 OK)
+n-queens,t05,OK,29,1000,slow,true,true,,0,0,(runs: 1/1 OK)
+n-queens,t06,OK,24,1000,slow,true,true,,0,0,(runs: 5/5 OK)
+n-queens,t07,OK,32,1000,slow,true,true,,4,0,(runs: 1/1 OK)
+n-queens,t08,OK,294,1000,slow,true,true,,262,94,time-only (runs: 1/1 OK)
+n-queens,t09,OK,1217,10000,slow,true,true,,1186,1017,time-only (runs: 1/1 OK)
+n-queens,t10,OK,1322,10000,slow,true,true,,1289,1122,time-only (runs: 1/1 OK)
+n-queens,t11,OK,1215,10000,slow,true,true,,1176,1015,time-only (runs: 1/1 OK)
+n-queens,t12,OK,2021,10000,slow,true,true,,1992,1821,time-only (runs: 1/1 OK)

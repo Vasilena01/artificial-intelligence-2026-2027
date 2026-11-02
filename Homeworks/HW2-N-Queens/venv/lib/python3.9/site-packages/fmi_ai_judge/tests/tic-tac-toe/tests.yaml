@@ -1,0 +1,13 @@
+defaults:
+  timeout: 1
+  timeout_slow: 2
+  checker: py
+  require_complete: true
+  require_optimal: true
+
+tests:
+  - id: t01  # Empty board, X to move -> any optimal opening (center or corners accepted)
+  - id: t02  # Immediate win available -> must win NOW
+  - id: t03  # Immediate block required -> must block NOW
+  - id: t04  # Terminal position -> must print -1 in JUDGE mode
+  - id: t05  # Fork trap test -> enforce optimal draw-saving move set

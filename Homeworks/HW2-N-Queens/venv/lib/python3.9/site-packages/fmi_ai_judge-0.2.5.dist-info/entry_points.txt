@@ -1,0 +1,3 @@
+[console_scripts]
+fmi-judge = fmi_ai_judge.cli:main
+judge = fmi_ai_judge.cli:main

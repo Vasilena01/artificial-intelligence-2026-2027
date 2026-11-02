@@ -1,0 +1,19 @@
+problems:
+  frog-leap:
+    name: "Frog Leap Puzzle"
+    aliases: ["flp","frog","frogs","frog-leap","frog-leap-puzzle","frogleap","frogleappuzzle"]
+  n-puzzle:
+    name: "N-Puzzle"
+    aliases: ["np","npuzzle","n-puzzle","sliding","sliding-blocks","slidingblocks"]
+  n-queens:
+    name: "N-Queens"
+    aliases: ["nq","queens","nqueens","n-queens"]
+  tsp:
+    name: "Traveling Salesman Problem"
+    aliases: ["tsp","traveling-salesman","traveling-salesman-problem","travelingsalesman","travelingsalesmanproblem"]
+  knapsack:
+    name: "Knapsack Problem"
+    aliases: ["kp","ks","ksp","knapsack","knapsack-problem","knapsackproblem"]
+  tic-tac-toe:
+    name: "Tic-Tac-Toe (Minimax + Alpha-Beta)"
+    aliases: ["ttt","tic","tictactoe","tic-tac-toe"]

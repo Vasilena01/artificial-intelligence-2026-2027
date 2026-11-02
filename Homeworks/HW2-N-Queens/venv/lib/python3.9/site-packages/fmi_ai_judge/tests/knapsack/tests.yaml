@@ -1,0 +1,16 @@
+defaults:
+  timeout: 10
+  timeout_slow: 30
+  require_complete: true
+  require_optimal: false    # keep default false; override per test
+
+tests:
+  - id: t01                 # SHORT (5000, 24 items) → optimum 1130
+    repeats: 10
+    min_success: 8
+    require_optimal: true
+
+  - id: t02                 # LONG  (5000, 200 items) → optimum 5119
+    repeats: 10
+    min_success: 8
+    require_optimal: true

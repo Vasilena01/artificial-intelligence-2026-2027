@@ -1,0 +1,12 @@
+defaults:
+  timeout: 1          # seconds (fast tier); slow tier inherits unless timeout_slow set
+
+tests:
+  - id: t01
+  - id: t02
+  - id: t03
+  - id: t04
+  - id: t05           # larger; still check correctness
+  - id: t06
+    timeout_slow: 5   # 5s for slow runtimes
+    time_only: true   # skip correctness (stress test)
