@@ -1,0 +1,19 @@
+defaults:
+  timeout: 1
+  checker: py
+  require_complete: true
+  require_optimal: true
+
+tests:
+  - id: t01
+  - id: t02
+  - id: t03
+  - id: t04
+  - id: t05
+  - id: t06
+  - id: t07
+  - id: t08
+  - id: t09
+  - id: t10
+  - id: t11
+    timeout_slow: 5

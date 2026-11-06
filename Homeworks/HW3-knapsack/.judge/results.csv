@@ -1,0 +1,3 @@
+problem,test,status,time_ms,time_budget_ms,tier,correct,complete,optimal,time_alg_ms,time_cal_ms,note
+knapsack,t01,OK,1504,10000,fast,true,true,true,1500,1479,improvements=1; length=10 (runs: 10/10 OK)
+knapsack,t02,OK,1505,10000,fast,true,true,true,1501,1480,improvements=1; length=10 (runs: 10/10 OK)

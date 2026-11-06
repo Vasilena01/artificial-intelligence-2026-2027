@@ -1,0 +1,12 @@
+defaults:
+  timeout: 10
+  timeout_slow: 30
+  require_complete: true
+  require_optimal: false
+
+tests:
+  - id: t01            # random N=100 → check monotone improvements only
+  - id: t02            # UK12 → hit known optimum most runs
+    repeats: 10
+    min_success: 8
+    require_optimal: true
